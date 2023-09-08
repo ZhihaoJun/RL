@@ -1,10 +1,10 @@
 import gymnasium as gym
 import numpy as np
 import matplotlib.pyplot as plt
+from core import train, play
 
-env = gym.make('CliffWalking-v0')
-
-rewards = []
+train_env = gym.make('CliffWalking-v0')
+play_env = gym.make('CliffWalking-v0', render_mode='human')
 
 class RLAgent:
     def __init__(self, n_states, n_actions):
@@ -33,52 +33,11 @@ class RLAgent:
         else:
             target = reward + self.gamma * np.max(self.q_table[next_ob])
         self.q_table[ob][action] += self.lr * (target - predict)
-
-agent = RLAgent(env.observation_space.n, env.action_space.n)
-
-def train():
-    train_eps = 500
-    rewards = []
-    ma_rewards = []
-
-    for ep in range(train_eps):
-        print(f'ep {ep}')
-        ep_reward = 0
-        ob, info = env.reset()
-        
-        while True:
-            action = agent.choose_action(ob)
-            next_ob, reward, done, truncated, info = env.step(action)
-            agent.update(ob, action, reward, next_ob, done)
-
-            ob = next_ob
-            ep_reward += reward
-            if done:
-                break
-        print(f'ep {ep} ends with reward:{ep_reward}')
-        rewards.append(ep_reward)
-        if ma_rewards:
-            ma_rewards.append(ma_rewards[-1] * 0.9 + ep_reward*0.1)
-        else:
-            ma_rewards.append(ep_reward)
     
-    print(agent.q_table)
+    def get_parameters(self):
+        return self.q_table
 
-    # 画图
-    plt.plot(rewards)
-    plt.plot(ma_rewards)
-    plt.show()
+agent = RLAgent(train_env.observation_space.n, train_env.action_space.n)
 
-def play():
-    play_env = gym.make('CliffWalking-v0', render_mode='human')
-    ob, info = play_env.reset()
-    while True:
-        action = agent.choose_action(ob)
-        next_ob, reward, done, truncated, info = play_env.step(action)
-        if done:
-            break
-        ob = next_ob
-        env.render()
-
-train()
-play()
+train(train_env, agent)
+play(play_env, agent)
